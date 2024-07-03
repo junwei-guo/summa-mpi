@@ -21,6 +21,7 @@
 module mDecisions_module
 USE nrtype
 USE var_lookup, only: maxvarDecisions  ! maximum number of decisions
+USE summa_mpi
 implicit none
 private
 public::mDecisions
@@ -175,6 +176,7 @@ subroutine mDecisions(err,message)
   ! model decision structures
   USE globalData,only:model_decisions        ! model decision structure
   USE var_lookup,only:iLookDECISIONS         ! named variables for elements of the decision structure
+  USE globalData,only:mpiSyncTime            ! MPI Sync Frequency
   ! forcing metadata
   USE globalData,only:forc_meta              ! metadata structures
   USE var_lookup,only:iLookFORCE             ! named variables to define structure elements
@@ -662,6 +664,15 @@ subroutine mDecisions(err,message)
     case default
       err=10; message=trim(message)//"unknown option for snow unloading [option="//trim(model_decisions(iLookDECISIONS%snowUnload)%cDecision)//"]"; return
   end select
+
+   !MPI barrier synchronization frequency, unit day. if value is missing or negative, no synchronization 
+  if (model_decisions(iLookDECISIONS%mpiSyncFreq)%cOption == 'mpiSyncFreq') then
+    ! Option detected in the mDecision file, read MPI syncing value.
+    read(model_decisions(iLookDECISIONS%mpiSyncFreq)%cDecision,*) mpiSyncTime
+    model_decisions(iLookDECISIONS%mpiSyncFreq)%iDecision = mpiSyncTime
+  else
+    mpiSyncTime = -1.0
+  endif
 
 
   ! -----------------------------------------------------------------------------------------------------------------------------------------------

@@ -828,6 +828,7 @@ subroutine read_output_file(err,message)
   USE ascii_util_module,only:linewidth          ! match character number for one line
   USE ascii_util_module,only:get_vlines         ! get a vector of non-comment lines
   USE ascii_util_module,only:split_line         ! split a line into words
+  USE summa_mpi
   implicit none
 
   ! dummy variables
@@ -932,8 +933,8 @@ subroutine read_output_file(err,message)
 
     ! id variables should not be specified in output control file
     if (trim(structName)=='id')then
-    print*,'id variable requested in outputControl, will be skipped: variable='//trim(varName)
-    cycle
+      if (idx_rank==0) print*,'id variable requested in outputControl, will be skipped: variable='//trim(varName)
+      cycle
     end if
 
     ! --- identify the desired frequency in the metadata structure  -----------

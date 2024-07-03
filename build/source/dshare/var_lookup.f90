@@ -76,7 +76,7 @@ MODULE var_lookup
   integer(i4b)    :: snowDenNew = integerMissing     ! choice of method for new snow density
   integer(i4b)    :: nrgConserv = integerMissing     ! choice of variable in either energy backward Euler residual or IDA state variable
   integer(i4b)    :: aquiferIni = integerMissing     ! choice of full or empty aquifer at start
-
+  integer(i4b)    :: mpiSyncFreq = integerMissing    ! MPI barrier synchronization frequency, unit hour. if value is missing or negative, no synchronization
  endtype iLook_decision
 
  ! ***********************************************************************************************************
@@ -889,7 +889,7 @@ MODULE var_lookup
  type(iLook_decision),public,parameter :: iLookDECISIONS=iLook_decision(  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,&
                                                                          11, 12, 13, 14, 15, 16, 17, 18, 19, 20,&
                                                                          21, 22, 23, 24, 25, 26, 27, 28, 29, 30,&
-                                                                         31, 32, 33, 34, 35, 36, 37, 38, 39, 40)
+                                                                         31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41)
  ! named variables: model time
  type(iLook_time),    public,parameter :: iLookTIME     =iLook_time    (  1,  2,  3,  4,  5,  6,  7)
  ! named variables: model forcing data
