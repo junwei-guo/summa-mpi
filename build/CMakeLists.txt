@@ -6,6 +6,17 @@ set(CMAKE_CONFIGURATION_TYPES Release Debug)
 
 set(CMAKE_Fortran_COMPILER "mpif90")
 
+option(USE_SUNDIALS "Use IDA solver from SUNDIALS suite" OFF)
+# Handle optional external libraries
+if (USE_SUNDIALS)
+    message("ENABLING SUNDIALS")
+    find_package(SUNDIALS REQUIRED)
+    list(APPEND EXT_TARGETS SUNDIALS::fida_mod_shared
+                            SUNDIALS::fkinsol_mod_shared)
+    add_compile_definitions(SUNDIALS_ACTIVE)
+    set(EXEC_NAME summa_sundials.exe)
+endif()
+
 # Set Default Executable Name
 set(EXEC_NAME summa.exe)
 set(F_MASTER "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -66,9 +77,12 @@ add_subdirectory(${F_MASTER}/build/source/)
 
 set(COMM_ALL ${NRPROC} ${HOOKUP} ${DATAMS} ${UTILMS})
 set(SUMMA_ALL ${NETCDF} ${PRELIM} ${MODRUN} ${SOLVER} ${DRIVER})
-# Add non-actor files
-set(SUMMA_ALL ${SUMMA_ALL} ${PRELIM_NOT_ACTORS} ${MODRUN_NOT_ACTORS}
-              ${SOLVER_NOT_ACTORS} ${DRIVER_NOT_ACTORS})
+
+if (USE_SUNDIALS)
+    set(COMM_ALL ${COMM_ALL} ${DATAMS_SUNDIALS} ${UTILMS_SUNDIALS})
+    set(SUMMA_ALL ${SUMMA_ALL} ${MODRUN_SUNDIALS} ${SOLVER_SUNDIALS})
+endif()
+
 set(MAIN_SUMMA ${DRIVER_DIR}/summa_driver.f90)
 
 # Define version number, not working correctly

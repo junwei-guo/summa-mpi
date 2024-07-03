@@ -23,6 +23,7 @@ set(NRUTIL
 set(NRPROC
     ${ENGINE_DIR}/expIntegral.f90
     ${ENGINE_DIR}/spline_int.f90
+    ${ENGINE_DIR}/hyp_2F1.f90
     CACHE INTERNAL "NRPROC")
 
 # Hook-up modules
@@ -42,6 +43,10 @@ set(DATAMS
     ${DSHARE_DIR}/popMetadat.f90
     ${DSHARE_DIR}/var_lookup.f90
     CACHE INTERNAL "DATAMS")
+set(DATAMS_SUNDIALS
+    ${DSHARE_DIR}/type4ida.f90
+    ${DSHARE_DIR}/type4kinsol.f90
+    CACHE INTERNAL "DATAMS_SUNDIALS")
 
 # Utility modules
 set(UTILMS
@@ -52,6 +57,10 @@ set(UTILMS
     ${ENGINE_DIR}/time_utils.f90
     ${ENGINE_DIR}/updatState.f90
     CACHE INTERNAL "UTILMS")
+set(UTILMS_SUNDIALS
+    ${ENGINE_DIR}/soil_utilsAddPrime.f90
+    ${ENGINE_DIR}/updatStateWithPrime.f90
+    CACHE INTERNAL "UTILMS_SUNDIALS")
 
 # NetCDF routines
 set(NETCDF
@@ -67,7 +76,6 @@ set(PRELIM
     ${ENGINE_DIR}/check_icond.f90
     ${ENGINE_DIR}/checkStruc.f90
     ${ENGINE_DIR}/childStruc.f90
-    ${ENGINE_DIR}/convE2Temp.f90
     ${ENGINE_DIR}/conv_funcs.f90
     ${ENGINE_DIR}/ffile_info.f90
     ${ENGINE_DIR}/read_pinit.f90
@@ -82,45 +90,60 @@ set(PRELIM
 set(MODRUN
     ${ENGINE_DIR}/canopySnow.f90
     ${ENGINE_DIR}/derivforce.f90
+    ${ENGINE_DIR}/enthalpyTemp.f90
     ${ENGINE_DIR}/getVectorz.f90
     ${ENGINE_DIR}/indexState.f90
     ${ENGINE_DIR}/layerMerge.f90
     ${ENGINE_DIR}/layerDivide.f90
     ${ENGINE_DIR}/qTimeDelay.f90
+    ${ENGINE_DIR}/read_force.f90
     ${ENGINE_DIR}/snowAlbedo.f90
     ${ENGINE_DIR}/snwCompact.f90
     ${ENGINE_DIR}/tempAdjust.f90
     ${ENGINE_DIR}/updateVars.f90
     ${ENGINE_DIR}/var_derive.f90
     ${ENGINE_DIR}/volicePack.f90
-    ${ENGINE_DIR}/read_force.f90
     CACHE INTERNAL "MODRUN")
+set(MODRUN_SUNDIALS
+    ${ENGINE_DIR}/tol4ida.f90
+    ${ENGINE_DIR}/updateVarsWithPrime.f90
+    CACHE INTERNAL "MODRUN_SUNDIALS")
 
 # Solver main modules
 set(SOLVER
     ${ENGINE_DIR}/bigAquifer.f90
     ${ENGINE_DIR}/computFlux.f90
+    ${ENGINE_DIR}/computHeatCap.f90
     ${ENGINE_DIR}/computJacob.f90
     ${ENGINE_DIR}/computResid.f90
+    ${ENGINE_DIR}/computSnowDepth.f90
+    ${ENGINE_DIR}/computThermConduct.f90
     ${ENGINE_DIR}/coupled_em.f90
     ${ENGINE_DIR}/diagn_evar.f90
     ${ENGINE_DIR}/eval8summa.f90
     ${ENGINE_DIR}/groundwatr.f90
     ${ENGINE_DIR}/opSplittin.f90
+    ${ENGINE_DIR}/run_oneGRU.f90
+    ${ENGINE_DIR}/run_oneHRU.f90
     ${ENGINE_DIR}/snowLiqFlx.f90
     ${ENGINE_DIR}/soilLiqFlx.f90
     ${ENGINE_DIR}/ssdNrgFlux.f90
     ${ENGINE_DIR}/stomResist.f90
+    ${ENGINE_DIR}/summaSolve4homegrown.f90
     ${ENGINE_DIR}/systemSolv.f90
-    ${ENGINE_DIR}/summaSolve.f90 
     ${ENGINE_DIR}/varSubstep.f90
     ${ENGINE_DIR}/vegLiqFlux.f90
     ${ENGINE_DIR}/vegNrgFlux.f90
     ${ENGINE_DIR}/vegPhenlgy.f90
     ${ENGINE_DIR}/vegSWavRad.f90
-    ${ENGINE_DIR}/run_oneGRU.f90
-    ${ENGINE_DIR}/run_oneHRU.f90
     CACHE INTERNAL "SOLVER")
+set(SOLVER_SUNDIALS
+    ${ENGINE_DIR}/computJacobWithPrime.f90
+    ${ENGINE_DIR}/computResidWithPrime.f90
+    ${ENGINE_DIR}/eval8summaWithPrime.f90
+    ${ENGINE_DIR}/summaSolve4ida.f90
+    ${ENGINE_DIR}/summaSolve4kinsol.f90
+    CACHE INTERNAL "SOLVER_SUNDIALS")
 
 # Driver support modules
 set(DRIVER
@@ -136,3 +159,6 @@ set(DRIVER
     ${DRIVER_DIR}/summa_modelRun.f90
     ${DRIVER_DIR}/summa_writeOutput.f90
     CACHE INTERNAL "DRIVER")
+set(DRIVER_NEXTGEN
+    ${DRIVER_DIR}/summa_bmi.f90
+    CACHE INTERNAL "DRIVER_NEXTGEN")

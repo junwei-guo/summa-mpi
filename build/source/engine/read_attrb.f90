@@ -37,6 +37,7 @@ contains
  ! provide access to global data
  USE globalData,only:gru_struc                              ! gru->hru mapping structure
  USE globalData,only:index_map                              ! hru->gru mapping structure
+ USE summa_mpi
  implicit none
 
  character(*),intent(in)              :: attrFile           ! name of attributed file
@@ -46,7 +47,7 @@ contains
  integer(i4b),intent(inout)           :: nHRU               ! number of HRUs in the run domain
  integer(i4b),intent(out)             :: err                ! error code
  character(*),intent(out)             :: message            ! error message
- integer(i4b),intent(in),optional     :: startGRU           ! index of the starting GRU for parallelization run
+ integer(i4b),intent(inout),optional  :: startGRU           ! index of the starting GRU for parallelization run
  integer(i4b),intent(in),optional     :: checkHRU           ! index of the HRU for a single HRU run
 
  ! locals
@@ -85,24 +86,71 @@ contains
  err = nf90_inq_dimid(ncID,"hru",hruDimId);                   if(err/=nf90_noerr)then; message=trim(message)//'problem finding hru dimension/'//trim(nf90_strerror(err)); return; end if
  err = nf90_inquire_dimension(ncID, hruDimId, len = fileHRU); if(err/=nf90_noerr)then; message=trim(message)//'problem reading hru dimension/'//trim(nf90_strerror(err)); return; end if
 
- ! get runtime GRU dimensions
- if     (present(startGRU)) then
-  if (nGRU < 1) then; err=20; message=trim(message)//'nGRU < 1 for a startGRU run'; return; end if
-  sGRU = startGRU
- elseif (present(checkHRU)) then
-  nGRU = 1
- else
-  sGRU = 1
-  nGRU = fileGRU
- endif
 
- ! check dimensions
- if (present(startGRU)) then
-  if(startGRU + nGRU - 1  > fileGRU) then; err=20; message=trim(message)//'startGRU + nGRU is larger than then the GRU dimension'; return; end if
- end if
- if (present(checkHRU)) then
-  if(checkHRU > fileHRU) then; err=20; message=trim(message)//'checkHRU is larger than then the HRU dimension'; return; end if
- end if
+  if (num_rank>1) then
+    !MPI paralleization: if startGRU and nGRU are not specified from the command line input, set to 1 and fileGRU respectively.
+    if (idx_rank==0) then; print *, "[MPI manager] Before rank assignment, (startGRU, nGRU) = (", startGRU,", ",nGRU,"). ";end if
+    if (startGRU<0) then 
+      startGRU = 1
+    end if
+    if (nGRU<0) then
+      nGRU = fileGRU
+    end if 
+  end if 
+
+  ! get runtime GRU dimensions
+  if     (present(startGRU)) then
+    if (nGRU < 1) then; err=20; message=trim(message)//'nGRU < 1 for a startGRU run'; return; end if
+    sGRU = startGRU
+  elseif (present(checkHRU)) then
+    nGRU = 1
+  else
+    sGRU = 1
+    nGRU = fileGRU
+  endif
+
+  ! check dimensions
+  if (present(startGRU)) then
+    if(startGRU + nGRU - 1  > fileGRU) then; err=20; message=trim(message)//'startGRU + nGRU is larger than then the GRU dimension'; return; end if
+  end if
+  if (present(checkHRU)) then
+    if(checkHRU > fileHRU) then; err=20; message=trim(message)//'checkHRU is larger than then the HRU dimension'; return; end if
+  end if
+
+
+
+ ! *****************************************************************************
+ !
+ !    *** MPI parallelization: reseting nGRU and sGRU for each MPI rank.
+ !
+ ! *****************************************************************************
+ nGRU_COMM_WORLD  = nGRU
+ sGRU_COMM_WORLD  = sGRU 
+
+ mpi_table_filename='mpi_table.txt'
+ inquire(file=mpi_table_filename, exist=mpi_table_err)
+
+ if (mpi_table_err) then
+    call mpi_load_balancer_from_table()
+ else 
+    if (idx_rank==0) print *, "[MPI manager] "//trim(mpi_table_filename)//" dose NOT exists. Assgin GRUs to each MPI rank evenly."
+    mpi_table_loaded = .FALSE.
+ end if 
+
+
+if (.NOT. mpi_table_loaded) then
+  call mpi_even_load_balancer()
+end if 
+
+
+ nGRU = nGRU_this_rank
+ sGRU = sGRU_this_rank
+ if (present(startGRU)) then 
+  startGRU = sGRU_this_rank
+ endif 
+
+ call mpi_print_gru_distribution(sGRU,nGRU)
+
 
  ! *********************************************************************************************
  ! read mapping vectors and populate mapping structures
@@ -122,6 +170,10 @@ contains
  ! read hru2gru_id from netcdf file
  err = nf90_inq_varid(ncID,"hru2gruId",varID); if (err/=0) then; message=trim(message)//'problem finding hru2gruId'; return; end if
  err = nf90_get_var(ncID,varID,hru2gru_id);    if (err/=0) then; message=trim(message)//'problem reading hru2gruId'; return; end if
+
+ ! close netcdf file
+ call nc_file_close(ncID,err,cmessage)
+ if (err/=0) then; message=trim(message)//trim(cmessage); return; end if
 
  ! array from 1 to total # of HRUs in attributes file
  hru_ix=arth(1,1,fileHRU)
@@ -183,11 +235,6 @@ else ! anything other than a single HRU run
 
 end if ! not checkHRU
 
-deallocate(gru_id, hru_ix, hru_id, hru2gru_id)
-! close netcdf file
-call nc_file_close(ncID,err,cmessage)
-if (err/=0) then; message=trim(message)//trim(cmessage); return; end if
-
 end subroutine read_dimension
 
  ! ************************************************************************************************
@@ -202,11 +249,12 @@ end subroutine read_dimension
  ! provide access to derived data types
  USE data_types,only:gru_hru_int                            ! x%gru(:)%hru(:)%var(:)     (i4b)
  USE data_types,only:gru_hru_int8                           ! x%gru(:)%hru(:)%var(:)     integer(8)
- USE data_types,only:gru_hru_double                         ! x%gru(:)%hru(:)%var(:)     (rkind)
+ USE data_types,only:gru_hru_double                         ! x%gru(:)%hru(:)%var(:)     (dp)
  ! provide access to global data
  USE globalData,only:gru_struc                              ! gru-hru mapping structure
  USE globalData,only:attr_meta,type_meta,id_meta            ! metadata structures
  USE get_ixname_module,only:get_ixAttr,get_ixType,get_ixId  ! access function to find index of elements in structure
+ USE summa_mpi
  implicit none
 
  ! io vars
@@ -355,7 +403,7 @@ end subroutine read_dimension
  varIndx = get_ixAttr('aspect')
  ! check that the variable was not found in the attribute file
  if(.not. checkAttr(varIndx)) then
-   write(*,*) NEW_LINE('A')//'INFO: aspect not found in the input attribute file, continuing ...'//NEW_LINE('A')
+  if (idx_rank==0) then; write(*,*) NEW_LINE('A')//'INFO: aspect not found in the input attribute file, continuing ...'//NEW_LINE('A'); end if
 
    do iGRU=1,nGRU
     do iHRU = 1, gru_struc(iGRU)%hruCount
@@ -394,13 +442,13 @@ end subroutine read_dimension
  ! **********************************************************************************************
  ! (5) close netcdf file
  ! **********************************************************************************************
-! free memory
+ call nc_file_close(ncID,err,cmessage)
+ if (err/=0)then; message=trim(message)//trim(cmessage); return; end if
+
+ ! free memory
  deallocate(checkType)
  deallocate(checkId)
  deallocate(checkAttr)
-
- call nc_file_close(ncID,err,cmessage)
- if (err/=0)then; message=trim(message)//trim(cmessage); return; end if
 
  end subroutine read_attrb
 

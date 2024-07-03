@@ -217,6 +217,7 @@ MODULE globalData
   integer(i4b),save,public                       :: ixRestart=ixRestart_never         ! define frequency to write restart files
   integer(i4b),save,public                       :: newOutputFile=noNewFiles          ! define option for new output files
   ! define common variables
+  real,save,public                               :: mpiSyncTime                       ! MPI sync hours
   integer(i4b),save,public                       :: numtim                            ! number of time steps
   integer(i4b),save,public                       :: nHRUrun                           ! number of HRUs in the run domain
   integer(i4b),save,public                       :: nGRUrun                           ! number of GRUs in the run domain
