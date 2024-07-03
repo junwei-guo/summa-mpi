@@ -41,9 +41,9 @@ USE globalData,only:prog_meta,diag_meta,flux_meta,indx_meta   ! metadata
 
 ! access the derived types to define the data structures
 USE data_types,only:&
-                    var_d,            & ! data vector (dp)
+                    var_d,            & ! data vector (rkind)
                     var_ilength,      & ! data vector with variable length dimension (i4b)
-                    var_dlength,      & ! data vector with variable length dimension (dp)
+                    var_dlength,      & ! data vector with variable length dimension (rkind)
                     model_options       ! defines the model decisions
 
 ! access named variables defining elements in the data structures
@@ -76,7 +76,8 @@ public::layerDivide
 
 contains
 
- ! ***********************************************************************************************************
+
+  ! ***********************************************************************************************************
  ! public subroutine layerDivide: add new snowfall to the system, and increase number of snow layers if needed
  ! ***********************************************************************************************************
  subroutine layerDivide(&
@@ -184,7 +185,7 @@ contains
   ! check if create the first snow layer
   select case(ix_snowLayers)
    case(sameRulesAllLayers);    createLayer = (scalarSnowDepth > zmax)
-   case(rulesDependLayerIndex); createLayer = (scalarSnowDepth > (zminLayer1 + zmaxLayer1_lower)/2._rkind) ! Initialize the first layer if we're halfway between the minimum and maximum depth for this layer. This gives some room for the layer to change depth in either direction and avoids excessive layer creation/deletion
+   case(rulesDependLayerIndex); createLayer = (scalarSnowDepth > zmaxLayer1_lower)
    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
   end select ! (option to combine/sub-divide snow layers)
 
@@ -221,12 +222,12 @@ contains
    mLayerTemp(1)        = min(maxFrozenSnowTemp,surfaceLayerSoilTemp)    ! snow temperature  (K)
 
    ! compute the fraction of liquid water associated with the layer temperature
-   fracLiq      = fracliquid(mLayerTemp(1),fc_param)
+   fracLiq = fracliquid(mLayerTemp(1),fc_param)
 
    ! compute volumeteric fraction of liquid water and ice
    volFracWater = (scalarSWE/scalarSnowDepth)/iden_water  ! volumetric fraction of total water (liquid and ice)
    mLayerVolFracIce(1) = (1._rkind - fracLiq)*volFracWater*(iden_water/iden_ice)   ! volumetric fraction of ice (-)
-   mLayerVolFracLiq(1) =          fracLiq *volFracWater                         ! volumetric fraction of liquid water (-)
+   mLayerVolFracLiq(1) =             fracLiq *volFracWater                         ! volumetric fraction of liquid water (-)
 
    ! end association with local variables to the information in the data structures)
    end associate
@@ -362,6 +363,7 @@ contains
  end subroutine layerDivide
 
 
+
  ! ************************************************************************************************
  ! private subroutine addModelLayer: add an additional layer to all model vectors
  ! ************************************************************************************************
@@ -432,8 +434,8 @@ contains
     if(stateVariable)then
      if(ix_upper > 0)then  ! (only copy data if the vector exists -- can be a variable for snow, with no layers)
       if(ix_divide > 0)then
-       dataStruct%var(ivar)%dat(1:ix_divide)            = tempVec_rkind(1:ix_divide)  ! copy data
-       dataStruct%var(ivar)%dat(ix_divide+1)            = tempVec_rkind(ix_divide)    ! repeat data for the sub-divided layer
+       dataStruct%var(ivar)%dat(1:ix_divide) = tempVec_rkind(1:ix_divide)  ! copy data
+       dataStruct%var(ivar)%dat(ix_divide+1) = tempVec_rkind(ix_divide)    ! repeat data for the sub-divided layer
       end if
       if(ix_upper > ix_divide) &
        dataStruct%var(ivar)%dat(ix_divide+2:ix_upper+1) = tempVec_rkind(ix_divide+1:ix_upper)  ! copy data
@@ -462,8 +464,8 @@ contains
     if(stateVariable)then
      if(ix_upper > 0)then  ! (only copy data if the vector exists -- can be a variable for snow, with no layers)
       if(ix_divide > 0)then
-       dataStruct%var(ivar)%dat(1:ix_divide)            = tempVec_i4b(1:ix_divide)  ! copy data
-       dataStruct%var(ivar)%dat(ix_divide+1)            = tempVec_i4b(ix_divide)    ! repeat data for the sub-divided layer
+       dataStruct%var(ivar)%dat(1:ix_divide) = tempVec_i4b(1:ix_divide)  ! copy data
+       dataStruct%var(ivar)%dat(ix_divide+1) = tempVec_i4b(ix_divide)    ! repeat data for the sub-divided layer
       end if
       if(ix_upper > ix_divide) &
        dataStruct%var(ivar)%dat(ix_divide+2:ix_upper+1) = tempVec_i4b(ix_divide+1:ix_upper)  ! copy data
