@@ -132,8 +132,8 @@ driver_err = 0
 call stop_program(driver_err, '')
 
 end_time_each_rank = MPI_Wtime()
-
-print *, "MPI rank@", idx_rank," has finished the process. Time taken:", end_time_each_rank - start_time, " (s). Waiting for other processes to be completed..."
+print *, "MPI rank@", idx_rank, " has finished the process. Time taken:", &
+end_time_each_rank - start_time, " (s). Waiting for other processes to be completed..."
 
 
 call MPI_Barrier(MPI_COMM_WORLD, mpi_err)
