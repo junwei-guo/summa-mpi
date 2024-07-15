@@ -153,23 +153,24 @@ contains
   ! define variables
   do iStruct = 1,size(structInfo)
    select case (trim(structInfo(iStruct)%structName))
-    case('attr' ); call def_variab(ncid(iFreq),iFreq,needHRU,  noTime,attr_meta, outputPrecision, err,cmessage)  ! local attributes HRU
-    case('type' ); call def_variab(ncid(iFreq),iFreq,needHRU,  noTime,type_meta, nf90_int,   err,cmessage)       ! local classification
-    case('mpar' ); call def_variab(ncid(iFreq),iFreq,needHRU,  noTime,mpar_meta, outputPrecision, err,cmessage)  ! model parameters
-    case('bpar' ); call def_variab(ncid(iFreq),iFreq,needGRU,  noTime,bpar_meta, outputPrecision, err,cmessage)  ! basin-average param
-    case('indx' ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,indx_meta, nf90_int,   err,cmessage)       ! model variables
-    case('deriv'); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,deriv_meta,outputPrecision, err,cmessage)  ! model derivatives
-    case('time' ); call def_variab(ncid(iFreq),iFreq,  noHRU,needTime,time_meta, nf90_int,   err,cmessage)       ! model derivatives
-    case('forc' ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,forc_meta, outputPrecision, err,cmessage)  ! model forcing data
-    case('prog' ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,prog_meta, outputPrecision, err,cmessage)  ! model prognostics
-    case('diag' ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,diag_meta, outputPrecision, err,cmessage)  ! model diagnostic variables
-    case('flux' ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,flux_meta, outputPrecision, err,cmessage)  ! model fluxes
-    case('bvar' ); call def_variab(ncid(iFreq),iFreq,needGRU,needTime,bvar_meta, outputPrecision, err,cmessage)  ! basin-average variables
-    case('id'   ); cycle                                                                                         ! ids -- see write_hru_info()
+    case('attr'  ); call def_variab(ncid(iFreq),iFreq,needHRU,  noTime,attr_meta, outputPrecision, err,cmessage)  ! local attributes HRU
+    case('type'  ); call def_variab(ncid(iFreq),iFreq,needHRU,  noTime,type_meta, nf90_int,   err,cmessage)       ! local classification
+    case('mpar'  ); call def_variab(ncid(iFreq),iFreq,needHRU,  noTime,mpar_meta, outputPrecision, err,cmessage)  ! model parameters
+    case('bpar'  ); call def_variab(ncid(iFreq),iFreq,needGRU,  noTime,bpar_meta, outputPrecision, err,cmessage)  ! basin-average param
+    case('indx'  ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,indx_meta, nf90_int,   err,cmessage)       ! model variables
+    case('deriv' ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,deriv_meta,outputPrecision, err,cmessage)  ! model derivatives
+    case('time'  ); call def_variab(ncid(iFreq),iFreq,  noHRU,needTime,time_meta, nf90_int,   err,cmessage)       ! model derivatives
+    case('forc'  ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,forc_meta, outputPrecision, err,cmessage)  ! model forcing data
+    case('prog'  ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,prog_meta, outputPrecision, err,cmessage)  ! model prognostics
+    case('diag'  ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,diag_meta, outputPrecision, err,cmessage)  ! model diagnostic variables
+    case('flux'  ); call def_variab(ncid(iFreq),iFreq,needHRU,needTime,flux_meta, outputPrecision, err,cmessage)  ! model fluxes
+    case('bvar'  ); call def_variab(ncid(iFreq),iFreq,needGRU,needTime,bvar_meta, outputPrecision, err,cmessage)  ! basin-average variables
+    case('id'    ); cycle                                                                                         ! ids -- see write_hru_info()
+    case('lookup'); cycle                                                                                         ! ids -- see write_hru_info()
     case default; err=20; message=trim(message)//'unable to identify lookup structure';
    end select
    ! error handling
-   if(err/=0)then;err=20;message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName);return;end if
+   if(err/=0)then;err=20;message=trim(message)//'[structure =  '//trim(structInfo(iStruct)%structName);return;end if
   end do ! iStruct
 
   ! write HRU dimension and ID for each output file
@@ -268,7 +269,7 @@ contains
  subroutine def_variab(ncid,iFreq,spatialDesire,timeDesire,metaData,ivtype,err,message)
  USE var_lookup,only:iLookvarType                   ! look up structure for variable typed
  USE data_types,only:var_info                       ! derived type for metaData
- USE var_lookup,only:iLookStat                      ! index into stats structure
+ USE var_lookup,only:iLookSTAT                      ! index into stats structure
  USE var_lookup,only:maxVarFreq                     ! # of available output frequencies
  USE get_ixName_module,only:get_varTypeName         ! to access type strings for error messages
  USE get_ixname_module,only:get_statName            ! statistics names for variable defs in output file
@@ -365,7 +366,7 @@ contains
   iStat = metaData(iVar)%statIndex(iFreq)
 
   ! create full variable name (append statistics info)
-  if(iStat==iLookStat%inst)then
+  if(iStat==iLookSTAT%inst)then
    catName = trim(metaData(iVar)%varName)
   else
    catName = trim(metaData(iVar)%varName)//'_'//trim(get_statName(iStat))
@@ -385,7 +386,7 @@ contains
 
   ! modify units for the summation
   catName = trim(metaData(iVar)%varunit)
-  if (iStat==iLookStat%totl) then
+  if (iStat==iLookSTAT%totl) then
 
    ! make sure that the units of this variable allow for integration
    if ((index(catName,'s-1')<=0).and.(index(catName,'s-2')<=0).and.(index(catName,'W m-2')<=0)) then
